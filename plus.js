@@ -47,14 +47,14 @@ function word(){var on=online(),w=$('#simword');w.textContent=on?'Your WifiSIM i
 setInterval(word,700);
 // phone book
 function book(){return g('book',[])}
-function add(num,name){if(!num||num===me()||!/^CB-\d{4}-\d{4}$/.test(num))return;var b=book(),c=b.find(function(x){return x.num===num});if(!c){b.unshift({num:num,name:name||num,t:Date.now()})}else{c.t=Date.now();if(name&&c.name===c.num)c.name=name}p('book',b);draw()}
+function add(num,name){if(!num||num===me()||!/^CB-\d{4}-\d{4}$/.test(num))return;var b=book(),c=b.find(function(x){return x.num===num});if(!c){b.unshift({num:num,name:name||num,t:Date.now()})}else if(name&&c.name===c.num){c.name=name}else return;p('book',b);draw()}
 function draw(){var b=book();if(KIND==='full'&&window.__cb){try{window.__cb.contacts().forEach(function(c){if(/^CB-/.test(c.num)&&!b.some(function(x){return x.num===c.num}))b.push({num:c.num,name:c.name})})}catch(e){}}
  $('#simlist').innerHTML=b.length?b.slice(0,40).map(function(c){return '<button data-n="'+esc(c.num)+'"><b>'+esc(c.name)+'</b><span>📞</span></button>'}).join(''):'<div style="font-size:15px;opacity:.8">People you call, or who connect with you, save here by themselves.</div>'}
 $('#simlist').addEventListener('click',function(e){var b=e.target.closest('[data-n]');if(b)callNum(b.dataset.n)});
 function callNum(n){if(KIND==='lite'){var t=$('#to');t.value=n;t.dispatchEvent(new Event('input'));$('#bcall').click()}else if(window.__cb){window.__cb.startCall(n,false)}}
 // learn people from the original app
 setInterval(function(){try{if(KIND==='lite'){var m=window.__lite.msgs();Object.keys(m).forEach(function(n){add(n)});var t=$('#to')&&$('#to').value;if(/^CB-\d{4}-\d{4}$/.test(t||''))add(t)}else draw()}catch(e){}},2000);
-new MutationObserver(function(){var w=$('#cwho');if(w&&/^CB-\d{4}-\d{4}$/.test(w.textContent))add(w.textContent)}).observe(document.body,{subtree:true,childList:true,characterData:true});
+(function(){var w=$('#cwho');if(w)new MutationObserver(function(){if(/^CB-\d{4}-\d{4}$/.test(w.textContent))add(w.textContent)}).observe(w,{subtree:true,childList:true,characterData:true})})();
 var q=new URLSearchParams(location.search).get('add');if(q)add(q.toUpperCase());
 // mute: capture the call microphone stream without changing call code
 var streams=[],muted=false;if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){var gum=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getUserMedia=function(c){return gum(c).then(function(s){streams.push(s);if(muted)s.getAudioTracks().forEach(function(t){t.enabled=false});return s})}}
