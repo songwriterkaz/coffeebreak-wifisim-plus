@@ -144,7 +144,7 @@ window.__keep={show:show,last:function(){return lastPong}};
 (function(){'use strict';var $=function(s){return document.querySelector(s)};
 var g=function(k,d){try{var v=localStorage.getItem('cbsim_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},p=function(k,v){try{localStorage.setItem('cbsim_'+k,JSON.stringify(v))}catch(e){}};
 var clean=function(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20)};
-var qs=new URLSearchParams(location.search),qme=clean(qs.get('me')),qcall=clean(qs.get('call'));
+var qs=new URLSearchParams(location.search),qme=clean(qs.get('me')),qcall=clean(qs.get('call'));var rawc=String(qs.get('call')||'').toUpperCase().match(/CB-?(\d{4})-?(\d{4})/);if(rawc){qcall='';try{window.__sim&&window.__sim.add('CB-'+rawc[1]+'-'+rawc[2])}catch(e){}}
 var KIND=window.CBSIM_KIND,PRE=KIND==='lite'?'cbl_':'cb_';function num(){try{return JSON.parse(localStorage.getItem(PRE+'num'))}catch(e){return null}}
 var ICEC=function(){return window.__ICE||{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]}};
 function base(){return window.__sim?window.__sim.link().split('?')[0]:location.origin+location.pathname}
@@ -152,7 +152,7 @@ if(qme){p('id',qme);if(!g('name',''))try{localStorage.setItem('cbsim_name',JSON.
 var css=document.createElement('style');css.textContent='#simlink{background:#fff;border:3px solid #2e7d32;border-radius:16px;padding:10px;margin:8px 0;text-align:center}#simlinku{font-size:20px;font-weight:800;word-break:break-all;color:#2e7d32;margin:4px 0}#simlink .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}#simlink .sbtn{padding:12px;font-size:19px}#simidmsg{color:#c62828;font-weight:700}';document.head.appendChild(css);
 var box=document.createElement('div');box.id='simlink';box.innerHTML='<div style="font-size:15px">Your link. Send it to someone and they connect with no taps.</div><div id="simlinku"></div><div id="simidmsg"></div><div class="two"><button class="sbtn" id="simcopy" style="background:#6b4226">📋 Copy</button><button class="sbtn" id="simshare" style="background:#e91e63">📤 Share</button></div><button class="sbtn" id="simsetid" style="background:#3b2417;font-size:16px;padding:10px;margin-top:8px">Choose my link name</button>';
 var cn=$('#simconn');cn.parentNode.insertBefore(box,cn);
-function myLink(){var id=g('id','');return base()+'?call='+(id||num())}
+function myLink(){var id=g('id','');return id?base()+'?call='+id:base()+'?add='+num()}
 function drawLink(){$('#simlinku').textContent=myLink()}
 $('#simcopy').onclick=function(){var l=myLink();(navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(function(){$('#simcopy').textContent='✓ Copied';setTimeout(function(){$('#simcopy').textContent='📋 Copy'},2000)}).catch(function(){prompt('Copy your link',l)})};
 $('#simshare').onclick=function(){var l=myLink();if(navigator.share)navigator.share({title:'Coffeebreak WifiSIM',text:'Tap to connect with me on Coffeebreak WifiSIM',url:l}).catch(function(){});else $('#simcopy').click()};
