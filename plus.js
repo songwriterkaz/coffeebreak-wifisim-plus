@@ -136,7 +136,7 @@ function dial(){var pt=partner();if(!pt||!window.Peer)return;peerName=pt.name;tr
 function ping(){if(kc&&kc.open){try{kc.send({ping:Date.now()})}catch(e){}}else dial();if(Date.now()-lastPong>9000&&kc){try{kc.close()}catch(e){}kc=null;dial()}show()}
 function show(){var pt=partner();if(!pt){pe.className='';return}var ok=Date.now()-lastPong<9000;pe.className='show'+(ok?'':' wait');pe.textContent=ok?'✓ Connected to '+pt.name:'Reconnecting to '+pt.name}
 setInterval(ping,3000);setTimeout(dial,1500);
-function back(){if(document.hidden)return;wake();try{kc&&kc.close()}catch(e){}kc=null;if(kp&&kp.disconnected){try{kp.reconnect()}catch(e){}}dial();try{window.dispatchEvent(new Event('online'))}catch(e){}}
+var inBack=false;function back(){if(document.hidden||inBack)return;inBack=true;setTimeout(function(){inBack=false},50);wake();try{kc&&kc.close()}catch(e){}kc=null;if(kp&&kp.disconnected){try{kp.reconnect()}catch(e){}}dial();try{window.dispatchEvent(new Event('online'))}catch(e){}}
 document.addEventListener('visibilitychange',back);addEventListener('focus',back);addEventListener('pageshow',back);addEventListener('online',back);
 window.__keep={show:show,last:function(){return lastPong}};
 })();
