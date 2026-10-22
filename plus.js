@@ -42,7 +42,7 @@ $('#simnmgo').onclick=function(){var v=$('#simnm').value.trim();if(!v)return $('
 $('#simnm').addEventListener('keydown',function(e){if(e.key==='Enter')$('#simnmgo').click()});
 // status words
 function online(){if(KIND==='lite')return !!(window.__lite&&window.__lite.ready());return !!(window.__cb&&window.__cb.state().ready)}
-function word(){var on=online(),w=$('#simword');w.textContent=on?'Your WifiSIM is on':(navigator.onLine===false?'No internet. Waiting for wifi or data':'Turning on your WifiSIM');w.className=on?'':'off';
+var lastOn=0;function word(){var now=Date.now(),real=online();if(real)lastOn=now;var on=real||(lastOn&&now-lastOn<4000&&navigator.onLine!==false),w=$('#simword');w.textContent=on?'Your WifiSIM is on':(navigator.onLine===false?'No internet. Waiting for wifi or data':'Turning on your WifiSIM');w.className=on?'':'off';
  $('#simwho').textContent=(g('name','')?g('name','')+'  ·  ':'')+(me()||'')}
 setInterval(word,300);
 // phone book
@@ -51,7 +51,7 @@ function add(num,name){if(!num||num===me()||!/^CB-\d{4}-\d{4}$/.test(num))return
 function draw(){var b=book();if(KIND==='full'&&window.__cb){try{window.__cb.contacts().forEach(function(c){if(/^CB-/.test(c.num)&&!b.some(function(x){return x.num===c.num}))b.push({num:c.num,name:c.name})})}catch(e){}}
  $('#simlist').innerHTML=b.length?b.slice(0,40).map(function(c){return '<button data-n="'+esc(c.num)+'"><b>'+esc(c.name)+'</b><span>📞</span></button>'}).join(''):'<div style="font-size:15px;opacity:.8">People you call, or who connect with you, save here by themselves.</div>'}
 $('#simlist').addEventListener('click',function(e){var b=e.target.closest('[data-n]');if(b)callNum(b.dataset.n)});
-function callNum(n){if(KIND==='lite'){var t=$('#to');t.value=n;t.dispatchEvent(new Event('input'));$('#bcall').click()}else if(window.__cb){window.__cb.startCall(n,false)}}
+var callNumLast='';function callNum(n){callNumLast=n;if(KIND==='lite'){var t=$('#to');t.value=n;t.dispatchEvent(new Event('input'));$('#bcall').click()}else if(window.__cb){window.__cb.startCall(n,false)}}
 // learn people from the original app
 setInterval(function(){try{if(KIND==='lite'){var m=window.__lite.msgs();Object.keys(m).forEach(function(n){add(n)});var t=$('#to')&&$('#to').value;if(/^CB-\d{4}-\d{4}$/.test(t||''))add(t)}else draw()}catch(e){}},2000);
 (function(){var w=$('#cwho');if(w)new MutationObserver(function(){if(/^CB-\d{4}-\d{4}$/.test(w.textContent))add(w.textContent)}).observe(w,{subtree:true,childList:true,characterData:true})})();
@@ -62,7 +62,15 @@ $('#simmute').onclick=function(){muted=!muted;streams.forEach(function(s){s.getA
 // pause: decline incoming calls while paused
 var paused=g('paused',false);function pz(){var b=$('#simpause');b.classList.toggle('on',paused);b.textContent=paused?'▶ Calls paused':'⏸ Pause calls'}pz();
 $('#simpause').onclick=function(){paused=!paused;p('paused',paused);pz()};
-setInterval(function(){if(!paused)return;var c=$('#call'),a=$('#ans');if(c&&a&&a.offsetParent!==null&&/Incoming/.test(($('#cstate')||{}).textContent||'')){var d=$('#dec')||$('#hang');d&&d.click()}},400);
+function decline(){if(!paused)return;var st=$('#cstate'),a=$('#ans');if(st&&a&&a.style.display!=='none'&&/Incoming/.test(st.textContent||'')){var d=$('#dec')||$('#hang');if(d&&d.onclick)d.onclick()}}
+(function(){var st=$('#cstate');if(st)new MutationObserver(decline).observe(st,{childList:true,characterData:true,subtree:true})})();setInterval(decline,250);
+// status line so a caller can learn this phone has paused calls
+var sp=null;function statusPeer(){var n=me();if(!n||!window.Peer||(sp&&!sp.destroyed&&!sp.disconnected))return;try{if(sp)sp.destroy()}catch(e){}
+ try{sp=new Peer('cbsimst-'+n.replace(/-/g,''),{config:window.__ICE||{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});sp.on('connection',function(c){c.on('open',function(){c.send({paused:paused})})});sp.on('error',function(){})}catch(e){}}
+setInterval(statusPeer,5000);setTimeout(statusPeer,800);
+var asked='';function tell(){var t='They have paused calls, try later';var end=Date.now()+4000;(function f(){var st=$('#cstate');if(st&&st.textContent!==t)st.textContent=t;['#err','#errbar'].forEach(function(s){var e=$(s);if(e&&e.offsetParent!==null&&/not online|declined|Declined|hung up/i.test(e.textContent))e.textContent=t});if(Date.now()<end)setTimeout(f,100)})()}
+function ask(n){if(!window.Peer)return;try{var tp=new Peer({config:window.__ICE||{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});tp.on('open',function(){var c=tp.connect('cbsimst-'+n.replace(/-/g,''),{serialization:'json'});c.on('data',function(d){if(d&&d.paused)tell();setTimeout(function(){tp.destroy()},300)})});tp.on('error',function(){});setTimeout(function(){try{tp.destroy()}catch(e){}},10000)}catch(e){}}
+(function(){var st=$('#cstate');if(!st)return;new MutationObserver(function(){var tx=st.textContent||'';if(/^(Calling|Getting microphone)/.test(tx)){var w=$('#cwho'),n=(w&&w.textContent.match(/CB-\d{4}-\d{4}/)||[])[0]||(callNumLast||'');if(n&&asked!==n+Math.floor(Date.now()/5000)){asked=n+Math.floor(Date.now()/5000);ask(n)}}}).observe(st,{childList:true,characterData:true,subtree:true})})();
 // sound output picker (Bluetooth headsets)
 var sinkOk='setSinkId' in HTMLMediaElement.prototype;
 function sinks(){if(!sinkOk||!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices)return;navigator.mediaDevices.enumerateDevices().then(function(d){var o=d.filter(function(x){return x.kind==='audiooutput'});var s=$('#simsink');if(o.length<2){s.style.display='none';return}s.style.display='';var v=g('sink','');s.innerHTML=o.map(function(x,i){return '<option value="'+esc(x.deviceId)+'"'+(x.deviceId===v?' selected':'')+'>🔊 '+esc(x.label||('Speaker '+(i+1)))+'</option>'}).join('');apply()}).catch(function(){})}
