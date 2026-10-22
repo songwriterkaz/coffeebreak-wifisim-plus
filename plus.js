@@ -98,7 +98,7 @@ function codePeer(){if(cp&&!cp.destroyed)return;code=String(100000+Math.floor(Ma
  cp.on('error',function(e){if(e.type==='unavailable-id'){cp.destroy();cp=null;codePeer()}});
  cp.on('connection',function(c){c.on('data',function(d){if(d&&d.num){add(d.num,d.name);hello(d.num);$('#simst').textContent='✓ Connected with '+(d.name||d.num)}});c.on('open',function(){c.send({num:me(),name:g('name','')})})})}catch(e){}}
 function hello(n){if(KIND==='full'&&window.__cb){window.__cb.helloTo(n)}else{var t=$('#to');if(t){t.value=n;t.dispatchEvent(new Event('input'))}try{window.__lite.sendTo(n,'Hi, it is '+(g('name','')||'me')+'. We are connected.')}catch(e){}}}
-function showQR(){var el=$('#simqr');el.innerHTML='';try{new QRCode(el,{text:link(),width:420,height:420,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}catch(e){el.textContent=link()}}
+function showQR(){var el=$('#simqr');el.innerHTML='';try{new QRCode(el,{text:(window.__link?window.__link.myLink():link()),width:420,height:420,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}catch(e){el.textContent=link()}}
 function loadQR(){return window.QRCode?Promise.resolve():new Promise(function(r,j){var s=document.createElement('script');s.src='qrcode.min.js';s.onload=r;s.onerror=j;document.head.appendChild(s)})}
 $('#simconn').onclick=function(){ov.classList.add('show');$('#simst').textContent='';loadQR().then(showQR).catch(function(){$('#simqr').textContent=link()});codePeer()};
 $('#simx').onclick=function(){ov.classList.remove('show')};
@@ -139,4 +139,40 @@ setInterval(ping,3000);setTimeout(dial,1500);
 var inBack=false;function back(){if(document.hidden||inBack)return;inBack=true;setTimeout(function(){inBack=false},50);wake();try{kc&&kc.close()}catch(e){}kc=null;if(kp&&kp.disconnected){try{kp.reconnect()}catch(e){}}dial();try{window.dispatchEvent(new Event('online'))}catch(e){}}
 document.addEventListener('visibilitychange',back);addEventListener('focus',back);addEventListener('pageshow',back);addEventListener('online',back);
 window.__keep={show:show,last:function(){return lastPong}};
+})();
+// Link set-up: ?me=karen gives this phone a readable name link. ?call=karen connects with no taps.
+(function(){'use strict';var $=function(s){return document.querySelector(s)};
+var g=function(k,d){try{var v=localStorage.getItem('cbsim_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},p=function(k,v){try{localStorage.setItem('cbsim_'+k,JSON.stringify(v))}catch(e){}};
+var clean=function(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20)};
+var qs=new URLSearchParams(location.search),qme=clean(qs.get('me')),qcall=clean(qs.get('call'));
+var KIND=window.CBSIM_KIND,PRE=KIND==='lite'?'cbl_':'cb_';function num(){try{return JSON.parse(localStorage.getItem(PRE+'num'))}catch(e){return null}}
+var ICEC=function(){return window.__ICE||{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]}};
+function base(){return window.__sim?window.__sim.link().split('?')[0]:location.origin+location.pathname}
+if(qme){p('id',qme);if(!g('name',''))try{localStorage.setItem('cbsim_name',JSON.stringify(qme.charAt(0).toUpperCase()+qme.slice(1)));var n=$('#simname');n&&n.classList.remove('show')}catch(e){}}
+var css=document.createElement('style');css.textContent='#simlink{background:#fff;border:3px solid #2e7d32;border-radius:16px;padding:10px;margin:8px 0;text-align:center}#simlinku{font-size:20px;font-weight:800;word-break:break-all;color:#2e7d32;margin:4px 0}#simlink .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}#simlink .sbtn{padding:12px;font-size:19px}#simidmsg{color:#c62828;font-weight:700}';document.head.appendChild(css);
+var box=document.createElement('div');box.id='simlink';box.innerHTML='<div style="font-size:15px">Your link. Send it to someone and they connect with no taps.</div><div id="simlinku"></div><div id="simidmsg"></div><div class="two"><button class="sbtn" id="simcopy" style="background:#6b4226">📋 Copy</button><button class="sbtn" id="simshare" style="background:#e91e63">📤 Share</button></div><button class="sbtn" id="simsetid" style="background:#3b2417;font-size:16px;padding:10px;margin-top:8px">Choose my link name</button>';
+var cn=$('#simconn');cn.parentNode.insertBefore(box,cn);
+function myLink(){var id=g('id','');return base()+'?call='+(id||num())}
+function drawLink(){$('#simlinku').textContent=myLink()}
+$('#simcopy').onclick=function(){var l=myLink();(navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(function(){$('#simcopy').textContent='✓ Copied';setTimeout(function(){$('#simcopy').textContent='📋 Copy'},2000)}).catch(function(){prompt('Copy your link',l)})};
+$('#simshare').onclick=function(){var l=myLink();if(navigator.share)navigator.share({title:'Coffeebreak WifiSIM',text:'Tap to connect with me on Coffeebreak WifiSIM',url:l}).catch(function(){});else $('#simcopy').click()};
+$('#simsetid').onclick=function(){var v=clean(prompt('Your link name, letters and numbers only',g('id','')||''));if(v){p('id',v);claim()}};
+// claim the readable name
+var ap=null;function claim(){var id=g('id','');drawLink();if(!id||!window.Peer||!num())return;try{ap&&ap.destroy()}catch(e){}
+ ap=new Peer('cbsimid-'+id,{config:ICEC()});
+ ap.on('open',function(){$('#simidmsg').textContent='';p('idok',true)});
+ ap.on('connection',function(c){c.on('open',function(){c.send({num:num(),name:g('name','')||id})});c.on('data',function(d){if(d&&d.num&&window.__sim)window.__sim.add(d.num,d.name)})});
+ ap.on('disconnected',function(){setTimeout(function(){try{ap.reconnect()}catch(e){}},500)});
+ ap.on('error',function(e){if(e.type==='unavailable-id'){var s=suggest(id);$('#simidmsg').textContent='The name '+id+' is used on another phone. Try '+s;var b=$('#simsetid');b.textContent='Use '+s;b.onclick=function(){p('id',s);b.textContent='Choose my link name';b.onclick=$('#simsetid').onclick;claim()}}})}
+function suggest(id){var m=id.match(/^(.*?)(\d*)$/);return m[1]+((parseInt(m[2]||'1',10))+1)}
+// call by name with zero taps
+function byName(name,tries){if(!window.Peer)return setTimeout(function(){byName(name,tries)},300);tries=tries||0;
+ var tp=new Peer({config:ICEC()}),done=false;tp.on('error',function(e){if(!done&&tries<6)setTimeout(function(){try{tp.destroy()}catch(x){}byName(name,tries+1)},1500)});
+ tp.on('open',function(){var c=tp.connect('cbsimid-'+name,{serialization:'json'});c.on('open',function(){c.send({num:num(),name:g('name','')})});c.on('data',function(d){if(!d||!d.num||done)return;done=true;
+  window.__sim&&window.__sim.add(d.num,d.name);var st=$('#simst');if(st)st.textContent='✓ Connected with '+(d.name||name);
+  try{if(KIND==='full'&&window.__cb)window.__cb.helloTo(d.num);else{var t=$('#to');if(t){t.value=d.num;t.dispatchEvent(new Event('input'))}window.__lite&&window.__lite.sendTo(d.num,'Hi, it is '+(g('name','')||'me')+'. We are connected.')}}catch(e){}
+  window.__byName={name:name,num:d.num};setTimeout(function(){tp.destroy()},1500)})})}
+var start=setInterval(function(){if(!num()||!window.Peer)return;clearInterval(start);claim();if(qcall&&qcall!==g('id',''))byName(qcall)},200);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&ap&&(ap.disconnected||ap.destroyed))claim()});
+window.__link={myLink:myLink,claim:claim};drawLink();
 })();
