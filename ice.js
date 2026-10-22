@@ -1,0 +1,3 @@
+// Loads relay settings from songwriterkaz.github.io/coffeebreak-ice/ice.json. Falls back to the app's own servers.
+(function(){var K='cbsim_ice';try{var c=JSON.parse(localStorage.getItem(K)||'null');if(c&&c.iceServers&&c.iceServers.length)window.__ICE=c}catch(e){}
+try{fetch('https://songwriterkaz.github.io/coffeebreak-ice/ice.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.iceServers&&j.iceServers.length){localStorage.setItem(K,JSON.stringify({iceServers:j.iceServers}));if(!window.__ICE)window.__ICE={iceServers:j.iceServers}}}).catch(function(){})}catch(e){}})();

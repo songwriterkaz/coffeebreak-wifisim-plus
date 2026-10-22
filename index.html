@@ -1,0 +1,154 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3b2417"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="WifiPhone"><link rel="icon" href="icon-192.png"><link rel="stylesheet" href="leaflet.css"><link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-192.png"><script src="ice.js"></script><title>Coffeebreak WifiSIM</title>
+<style>
+:root{--brown:#3b2417;--mid:#6b4226;--pink:#f48fb1;--hot:#e91e63;--cream:#fff4ec}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--cream);color:var(--brown);height:100vh;display:flex;flex-direction:column}
+header{background:var(--brown);color:#fff;display:flex;align-items:center;gap:10px;padding:8px 12px}
+header img{height:40px}header .n{font-weight:700;color:var(--pink);font-size:15px}header small{display:block;font-size:11px;opacity:.8}
+#st{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:10px;background:#777}#st.on{background:#2e7d32}
+main{flex:1;overflow:auto;padding:12px 12px 150px}section{display:none}section.act{display:block}
+nav{display:flex;background:var(--brown)}nav button{flex:1;background:none;border:0;color:#fff;padding:10px 0 14px;font-size:12px;position:relative}
+nav button.act{color:var(--pink);font-weight:700}.badge{background:var(--hot);color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px}
+.sub{display:flex;gap:6px;margin-bottom:10px}.sub button{flex:1;padding:8px;border:1px solid var(--mid);background:#fff;border-radius:16px;color:var(--brown)}.sub button.act{background:var(--pink);border-color:var(--pink)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:300px;margin:auto}
+.pad button{height:62px;border-radius:50%;border:0;background:#fff;font-size:24px;box-shadow:0 1px 3px #0003;color:var(--brown)}
+#dial{text-align:center;font-size:26px;letter-spacing:2px;min-height:40px;margin:8px 0}
+.cbtns{display:flex;justify-content:center;gap:16px;margin:14px}.round{width:62px;height:62px;border-radius:50%;border:0;font-size:24px;color:#fff;background:#2e7d32}.round.red{background:#c62828}.round.pink{background:var(--hot)}
+.row{display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;padding:10px;margin-bottom:8px;box-shadow:0 1px 2px #0002}
+.row .who{flex:1}.row .who b{display:block}.row .who span{font-size:12px;color:#8a6a55}.row button{border:0;background:var(--pink);border-radius:50%;width:38px;height:38px;font-size:16px}
+.btn{background:var(--hot);color:#fff;border:0;border-radius:20px;padding:10px 16px;font-size:15px}
+input{width:100%;padding:10px;border:1px solid #c9a; border-radius:10px;font-size:16px;margin:4px 0}
+.note{font-size:12px;background:#fde4ec;border-left:4px solid var(--hot);padding:8px;border-radius:6px;margin:10px 0}
+#chat{position:fixed;inset:0;background:var(--cream);display:none;flex-direction:column;z-index:5}#chat.show{display:flex}
+#chat .top{background:var(--brown);color:#fff;padding:10px;display:flex;gap:10px;align-items:center}#chat .top button{background:none;border:0;color:#fff;font-size:20px}
+#msgs{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+.m{max-width:75%;padding:8px 12px;border-radius:16px;background:#fff;align-self:flex-start;font-size:15px}.m.me{align-self:flex-end;background:var(--pink)}.m i{display:block;font-size:10px;opacity:.7;font-style:normal;text-align:right}
+#chat form{display:flex;gap:6px;padding:8px;background:#fff}#chat form input{margin:0}
+#call{position:fixed;inset:0;background:#000;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9}#call.show{display:flex}
+#rv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}#lv{position:absolute;right:10px;top:10px;width:110px;border-radius:10px;z-index:2}
+#call .info{z-index:2;text-align:center;margin-top:auto;padding-top:60px}#call .info img{height:80px}#call .cbtns{z-index:2;margin-top:auto;margin-bottom:40px}
+.ring #ci{animation:p 1s infinite}@keyframes p{50%{transform:scale(1.15)}}
+#qr{display:flex;justify-content:center;background:#fff;padding:12px;border-radius:12px;margin:10px auto;width:max-content}
+#install{display:none}
+html{background:#2a180e}
+body{max-width:480px;margin:0 auto;height:100dvh;overflow-x:hidden;box-shadow:0 0 30px #0008;position:relative}
+header{padding-top:max(8px,env(safe-area-inset-top))}nav button{padding-bottom:max(14px,env(safe-area-inset-bottom))}
+main{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+#chat,#call,#guest{max-width:480px;margin:0 auto}img,video{max-width:100%}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+#st{display:flex;align-items:center;gap:4px}#st::before{content:"";width:8px;height:8px;border-radius:50%;background:#bbb}#st.on::before{background:#7CFC00}#st.portal{background:#e65100}#st.portal::before{background:#ffd54f}
+#portal{display:none;background:#e65100;color:#fff;padding:10px;text-align:center;font-size:14px;cursor:pointer}#portal.show{display:block}
+#call.flash{animation:fl .6s infinite}@keyframes fl{50%{background:#e91e63}}#tapans{display:none;font-size:30px;font-weight:700;z-index:3;margin-top:20px}#call.flash #tapans{display:block}
+#lock{position:fixed;inset:0;max-width:480px;margin:auto;background:#3b2417;color:#fff;z-index:8;display:none;flex-direction:column;align-items:center;padding:20px;overflow:auto;text-align:center}#lock.show{display:flex}
+.kp{display:grid;grid-template-columns:repeat(3,72px);gap:12px;margin:12px auto}.kp button{height:72px;border-radius:50%;border:0;font-size:28px;background:#fff;color:#3b2417}#pinshow{font-size:34px;letter-spacing:10px;min-height:44px}
+</style></head><body>
+<header><img src="logo.png" alt="Coffeebreak"><div><div>Coffeebreak WifiPhone <small style="display:inline;font-size:10px">Digital SIM</small></div><div class="n" id="myn">...</div></div><span id="st">Connecting</span></header>
+<div id="errbar" role="alert" style="display:none;background:#c62828;color:#fff;font-weight:700;padding:10px;text-align:center"></div>
+<div id="fullbar" style="display:none;padding:6px;background:#2e7d32;text-align:center"><a id="fulla" target="_blank" rel="noopener" style="color:#fff;font-weight:700;font-size:17px">Tap to open full app for calls</a></div>
+<div id="portal" role="button" tabindex="0">This free wifi needs you to sign in first - tap here</div>
+<main>
+<section id="t-phone" class="act">
+ <div class="sub"><button data-p="keypad" class="act">Keypad</button><button data-p="recents">Recents</button><button data-p="contacts">Contacts</button><button data-p="favs">Favourites</button><button data-p="anyone">Anyone</button></div>
+ <div id="p-keypad" class="pp"><div id="readybar" style="text-align:center;font-weight:700;padding:6px;border-radius:10px;margin-bottom:8px;background:#eee">Starting...</div><div id="tipbar" style="display:none;background:#fde4ec;border-radius:10px;padding:8px;font-size:13px;margin-bottom:8px;position:relative">Tip: tap Connect a phone to add family. Keep the app open to get calls. <button id="tipx" style="position:absolute;right:6px;top:4px;border:0;background:none;font-size:16px" aria-label="Dismiss">✕</button></div><button class="btn" id="dlapp" style="width:100%;margin-bottom:8px;background:#2e7d32;font-size:17px">⬇️ Download the app</button>
+ <button class="btn" id="gconn" style="width:100%;margin-bottom:8px;font-size:18px;padding:14px">🤝 Connect a phone</button><div class="sub"><button class="btn" id="gsim" style="flex:1">💳 My SIM card</button><button class="btn" id="gsimset" style="flex:1;background:#6b4226">⚙️ Open my SIM settings</button><img id="simthumb" alt="My SIM QR" title="Tap to enlarge" style="height:44px;width:44px;background:#fff;border-radius:6px;cursor:pointer;border:2px solid var(--pink)"></div><div class="sub" id="quick"><button id="qmum" class="btn">📞 Call Mum</button><a class="btn" id="e000" href="tel:000" style="background:#c62828;text-align:center;text-decoration:none">000 (uses your phone)</a></div><div id="dial"></div><div class="pad" id="pad"></div>
+  <div class="cbtns"><button class="round" id="dv" title="Voice call">📞</button><button class="round pink" id="dvid" title="Video call">🎥</button><button class="round red" id="del" title="Delete">⌫</button></div>
+  <div class="sub"><button class="btn" id="gownwifi" style="flex:1;background:#6b4226">📶 Your own wifi (home or hotspot)</button><button class="btn" id="ghot" style="flex:1;background:#6b4226">🔥 Make a hotspot</button></div>
+  <div id="normrow" class="sub" style="display:none"><a class="btn" id="ntel" style="text-align:center;text-decoration:none;flex:1">Call with my phone</a><a class="btn" id="nsms" style="text-align:center;text-decoration:none;flex:1">Text with my phone</a></div>
+  <p style="text-align:center;font-size:12px">Dial 8 digits for a Coffeebreak number, or a normal phone number. Normal numbers use your own phone plan.</p></div>
+ <div id="p-recents" class="pp" style="display:none"></div>
+ <div id="p-contacts" class="pp" style="display:none">
+ <div class="sub"><button class="btn" id="cimp" style="flex:1">Import my phone contacts</button></div>
+ <label class="btn" style="display:block;text-align:center;margin-bottom:6px">Import contact card (.vcf)<input type="file" id="cvcf" accept=".vcf,text/vcard,text/x-vcard" multiple style="display:none"></label>
+ <p id="cimpst" style="font-size:12px"></p>
+ <p style="font-size:12px">iPhone: open Contacts, pick a contact, tap Share Contact, then Save to Files. Pick that file here. Contacts stay only on this phone.</p>
+ <div id="clist"></div>
+  <h4>Add contact</h4><input id="cname" placeholder="Name"><input id="cnum" placeholder="CB-1234-5678 or 0412 345 678"><label><input type="checkbox" id="cfav" style="width:auto"> Favourite</label><br><button class="btn" id="cadd">Save contact</button></div>
+ <div id="p-favs" class="pp" style="display:none"></div>
+ <div id="p-anyone" class="pp" style="display:none"><h3>Reach anyone</h3><p style="font-size:13px">Send a link by text, email, Messenger or any app. They tap it and join in their browser. No app, number or sign-up needed.</p>
+ <p><button class="btn" id="rlv">📞 Send voice call link</button></p><p><button class="btn" id="rlvid">🎥 Send video call link</button></p>
+ <p><button class="btn" id="rlmsg">💬 Send message link</button></p><p><button class="btn" id="rlmail">✉️ Email anyone</button></p>
+ <div class="note">Keep this app open while you wait for them to tap the link. This cannot ring a normal phone number or send an SMS for free. The link is sent with your own phone's apps.</div></div>
+</section>
+<section id="t-msgs"><div id="threads"></div><h4>New message</h4><input id="nmnum" placeholder="CB-1234-5678"><button class="btn" id="nmgo">Start chat</button></section>
+<section id="t-wifi"><div class="note">This finds free public wifi near you; the app cannot create wifi itself.</div>
+ <button class="btn" id="wfind">Find free wifi near me</button> <span id="wstat" style="font-size:12px"></span>
+ <div id="wmap" style="height:260px;border-radius:12px;margin:10px 0"></div><div id="wlist"></div>
+ <p style="font-size:11px">Map data © OpenStreetMap contributors</p></section>
+<section id="t-me"><h3 id="simcard">My SIM</h3>
+ <div class="sub"><button id="simq1" class="act">Get the app + add me</button><button id="simq2">Join my hotspot</button></div>
+ <canvas id="simcv" width="860" height="560" style="width:100%;border-radius:12px;display:block"></canvas>
+ <p><button class="btn" id="simshare">AirDrop / Share</button> <button class="btn" id="simsave">Save SIM card as image</button> <button class="btn" id="simfull">Full screen QR</button></p><h3>My Coffeebreak number</h3><div class="n" id="myn2" style="font-size:24px;font-weight:700;color:var(--hot)"></div>
+ <div id="qr"></div><p style="font-size:13px">Others can scan this QR code to add you.</p>
+ <button class="btn" id="share">Share my number</button> <button class="btn" id="install">Add to home screen</button>
+ <p id="ioshint" style="font-size:13px"></p>
+ <div class="note">Calls and texts work between Coffeebreak WifiPhone users only. It is not a phone company SIM and cannot call normal phone numbers or 000.</div>
+ <h4 id="simset">My SIM settings</h4>
+ <p><a class="btn" id="simsetopen" href="#" style="text-decoration:none">Open my SIM settings</a></p><div id="simsetsteps" style="font-size:13px"></div>
+ <div class="row" style="display:block;font-size:13px" id="netpanel"></div>
+ <div class="note">The app can open your SIM settings but cannot change them.</div>
+ <h4 id="family">My Family / Share list</h4>
+ <p style="font-size:13px">Tick who gets your details. Family with a Coffeebreak number get updates automatically when they are online.</p>
+ <div id="famlist"></div>
+ <label style="font-size:14px"><input type="checkbox" id="famhs" style="width:auto"> Share my hotspot with family</label>
+ <p><button class="btn" id="famsms">Send to my family (text)</button> <button class="btn" id="fammail">Email my family</button></p>
+ <div class="note">Phones do not let apps send texts on their own, so family with normal numbers need you to tap Send once.</div>
+ <h4>AirDrop / Nearby share</h4>
+ <p><button class="btn" id="adlink">Share app link and QR</button></p><p><button class="btn" id="adcard">Share my contact card</button></p><p><button class="btn" id="adhs">Share hotspot join code</button></p>
+ <p id="adst" style="font-size:12px"></p>
+ <h4 id="hotspot">Make a hotspot</h4>
+ <div class="note">The app cannot switch your hotspot on by itself. These buttons open your settings so you can switch it on.</div>
+ <p><a class="btn" id="hsopen" href="#" style="text-decoration:none">Open hotspot settings</a></p><div id="hssteps" style="font-size:13px"></div>
+ <h4>Let the other phone join</h4><p style="font-size:13px">Type your hotspot name and password. They stay only on this phone. The other phone scans the code with its camera to join.</p>
+ <input id="hsname" placeholder="Hotspot name" autocomplete="off"><input id="hspass" placeholder="Hotspot password" autocomplete="off">
+ <button class="btn" id="hsqr">Show join code</button><div id="hsqrbox" style="display:flex;justify-content:center;background:#fff;margin:8px auto;width:max-content"></div>
+ <p id="hsnext" style="display:none"><button class="btn" id="hsgo">Next: pair the phones</button></p>
+ <h4 id="ownwifi">Your own wifi (home or hotspot)</h4>
+ <p style="font-size:13px">Pair two phones on the same wifi by scanning QR codes. Text chat and voice calls then work with no internet.</p>
+ <p style="font-size:13px">It also works when one phone turns on its Personal Hotspot and the other phone joins it, with no internet needed.</p>
+ <button class="btn" id="lmA">1. Start pairing (show my code)</button> <button class="btn" id="lmB">Scan a pairing code</button>
+ <div id="lmqr" style="display:flex;justify-content:center;background:#fff;margin:8px auto;width:max-content"></div>
+ <video id="lmcam" playsinline muted style="width:100%;display:none;border-radius:10px"></video><div id="lmst" style="font-size:13px"></div>
+ <div id="lmchat" style="display:none"><div id="lmmsgs" style="max-height:200px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
+ <form id="lmform" style="display:flex;gap:6px"><input id="lmtext" placeholder="Message on home wifi"><button class="btn">Send</button></form>
+ <button class="btn" id="lmcall">📞 Voice call on home wifi</button> <button class="btn" id="lmhang" style="background:#c62828">End</button><audio id="lmaudio" autoplay></audio></div>
+ <div class="note">Your own wifi limits: both phones must be on the same wifi and the router must let devices see each other (guest networks often block this). Some browsers hide local addresses, so pairing can fail on some phones. If it fails, use normal mode while online.</div>
+ <div id="getapp" style="margin:10px 0;padding:10px;border:2px solid #4a2c1a;border-radius:12px;background:#fff8f0;color:#4a2c1a;text-align:center">
+<button type="button" id="getappbtn" style="font-size:18px;padding:12px 16px;border-radius:10px;border:0;background:#4a2c1a;color:#fff;cursor:pointer;width:100%">📲 Get the Android app</button>
+<div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-top:8px"><img src="getapp-qr.png" alt="QR code to download the app" style="width:120px;height:120px;background:#fff;border-radius:8px"><span style="font-size:13px;text-align:left">Scan with another phone to get the app</span></div>
+<div id="getappios" style="display:none;font-size:14px;text-align:left;margin-top:8px"><b>iPhone and iPad:</b> open this page in Safari, tap the Share button, then tap Add to Home Screen, then tap Add.</div>
+<script>(function(){var u="https://songwriterkaz.github.io/coffeebreak-wifisim-plus/",g=document.getElementById("getapp"),ua=navigator.userAgent;
+if(/CoffeebreakApp/.test(ua)){g.style.display="none";return}
+var ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+document.getElementById("getappbtn").onclick=function(){if(ios){document.getElementById("getappios").style.display="block"}else{window.open(u,"_blank")}};
+if(ios)document.getElementById("getappbtn").textContent="📲 Add to Home Screen (iPhone)";})();</script></div><h4>Settings</h4><h4 id="e000anchor" style="margin-bottom:4px">SIM PIN</h4><p id="pinstate" style="font-size:14px"></p>
+ <input id="p1" type="password" inputmode="numeric" maxlength="8" placeholder="New PIN (4 to 8 digits)"><input id="p2" type="password" inputmode="numeric" maxlength="8" placeholder="Enter it again"><input id="pcur" type="password" inputmode="numeric" maxlength="8" placeholder="Current PIN">
+ <button class="btn" id="pinon">Turn on SIM PIN</button> <button class="btn" id="pinchg">Change PIN</button> <button class="btn" id="pinoff" style="background:#c62828">Turn off SIM PIN</button><p id="pinset" style="font-weight:700"></p>
+ <p style="font-size:12px">Only a scrambled code of your PIN is kept on this phone.</p>
+ <p style="font-size:12px">Works on wifi or mobile data. Keep the app open to receive calls. Messages to someone offline wait on this phone and send when you are both online.</p></section>
+</main>
+<nav><button data-t="phone" class="act">📞 Phone</button><button data-t="msgs">💬 Messages<span class="badge" id="ub" hidden></span></button><button data-t="wifi">📶 Free Wifi</button><button data-t="me">☕ My SIM</button></nav>
+<div id="chat"><div class="top"><button id="cback">‹</button><b id="ctitle"></b><span style="margin-left:auto"></span><button id="ccall">📞</button><button id="cvid">🎥</button></div><div id="msgs"></div>
+ <form id="cform"><input id="ctext" placeholder="Message" autocomplete="off"><button class="btn">Send</button></form></div>
+<div id="call"><video id="rv" autoplay playsinline></video><video id="lv" autoplay playsinline muted></video>
+ <div class="info"><div id="tapans">Tap to answer</div><img id="ci" src="logo.png"><h2 id="cwho"></h2><div id="cstate"></div></div>
+ <div class="cbtns"><button class="round" id="ans">📞</button><button class="round red" id="hang">✖</button><button class="round pink" id="mute">🎤</button></div></div>
+<script src="peerjs.min.js"></script><script src="qrcode.min.js"></script><script src="leaflet.js"></script><script src="wifi.js"></script><script src="jsqr.js"></script><script src="local.js"></script><script src="phones.js"></script><div id="connect" style="display:none;position:fixed;inset:0;max-width:480px;margin:auto;background:var(--cream);z-index:25;overflow:auto;padding:16px;text-align:center">
+ <button class="btn" id="connx" style="float:right;background:#6b4226">Close</button><h2>Connect a phone</h2>
+ <input id="myname" placeholder="Your name (shown to them)" style="max-width:300px">
+ <p style="font-size:14px">Let them scan this, or type your code on their phone.</p><div id="connqr" style="display:flex;justify-content:center;background:#fff;padding:10px;width:max-content;margin:auto"></div>
+ <p>My connect code: <b id="conncode" style="font-size:28px;letter-spacing:4px;color:var(--hot)">....</b></p>
+ <p><button class="btn" id="connscan" style="font-size:17px">📷 Scan theirs</button></p>
+ <video id="conncam" playsinline muted style="width:100%;display:none;border-radius:10px"></video>
+ <p><input id="conntype" inputmode="numeric" maxlength="4" placeholder="Type their 4-digit code" style="max-width:220px"> <button class="btn" id="conngo">Connect</button></p>
+ <p id="connst" style="font-size:18px;font-weight:700"></p>
+ <p><button class="btn" id="syncnow" style="background:#6b4226">🔄 Sync now</button></p></div>
+<div id="instguide" style="display:none;position:fixed;inset:0;max-width:480px;margin:auto;background:#fffdf9;z-index:26;padding:20px;overflow:auto"><button class="btn" id="instx" style="float:right;background:#6b4226">Close</button><div id="instbody"></div></div>
+<div id="lock" role="dialog" aria-label="SIM PIN"><img src="logo.png" style="width:70px;background:#fff;border-radius:8px" alt=""><h2>Enter SIM PIN</h2><div id="pinshow"></div><div id="pinmsg" style="min-height:24px;color:#ffb74d"></div><div class="kp" id="kp"></div>
+<div style="display:flex;gap:8px;width:100%;max-width:340px"><button class="btn" id="lmum" style="flex:1;background:#ad1457">📞 Call Mum</button><a class="btn" href="tel:000" style="flex:1;background:#c62828;text-decoration:none;text-align:center">000</a></div>
+<button id="lforgot" style="background:none;border:0;color:#f48fb1;text-decoration:underline;margin-top:10px;font-size:16px">Forgot PIN</button></div>
+<div id="qrfull" style="display:none;position:fixed;inset:0;background:#fff;z-index:30;align-items:center;justify-content:center;flex-direction:column" role="button" tabindex="0"><div id="qrfullbox"></div><p style="color:#3b2417">Tap to close</p></div>
+<div id="guest" style="display:none;position:fixed;inset:0;background:var(--cream);z-index:8;padding:20px;text-align:center;overflow:auto"><img src="logo.png" style="height:110px"><h2 id="gtitle"></h2><div id="gbody"></div></div>
+<script>document.write('<script src="'+(/[#&](call|msg)=/.test(location.hash)?'guest.js':'app.js')+'"><\/script>')</script>
+<script src="ext.js"></script><script src="e000.js" data-key="cb_e000" data-anchor="#e000anchor"></script><script>window.CBSIM_KIND="full"</script><script src="plus.js"></script></body></html>
