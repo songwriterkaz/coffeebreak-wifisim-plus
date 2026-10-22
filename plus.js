@@ -44,7 +44,7 @@ $('#simnm').addEventListener('keydown',function(e){if(e.key==='Enter')$('#simnmg
 function online(){if(KIND==='lite')return !!(window.__lite&&window.__lite.ready());return !!(window.__cb&&window.__cb.state().ready)}
 function word(){var on=online(),w=$('#simword');w.textContent=on?'Your WifiSIM is on':(navigator.onLine===false?'No internet. Waiting for wifi or data':'Turning on your WifiSIM');w.className=on?'':'off';
  $('#simwho').textContent=(g('name','')?g('name','')+'  ·  ':'')+(me()||'')}
-setInterval(word,700);
+setInterval(word,300);
 // phone book
 function book(){return g('book',[])}
 function add(num,name){if(!num||num===me()||!/^CB-\d{4}-\d{4}$/.test(num))return;var b=book(),c=b.find(function(x){return x.num===num});if(!c){b.unshift({num:num,name:name||num,t:Date.now()})}else if(name&&c.name===c.num){c.name=name}else return;p('book',b);draw()}
