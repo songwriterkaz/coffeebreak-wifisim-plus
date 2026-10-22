@@ -66,8 +66,8 @@ function decline(){if(!paused)return;var st=$('#cstate'),a=$('#ans');if(st&&a&&a
 (function(){var st=$('#cstate');if(st)new MutationObserver(decline).observe(st,{childList:true,characterData:true,subtree:true})})();setInterval(decline,250);
 // status line so a caller can learn this phone has paused calls
 var sp=null;function statusPeer(){var n=me();if(!n||!window.Peer||(sp&&!sp.destroyed&&!sp.disconnected))return;try{if(sp)sp.destroy()}catch(e){}
- try{sp=new Peer('cbsimst-'+n.replace(/-/g,''),{config:window.__ICE||{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});sp.on('connection',function(c){c.on('open',function(){c.send({paused:paused})})});sp.on('error',function(){})}catch(e){}}
-setInterval(statusPeer,5000);setTimeout(statusPeer,800);
+ try{sp=new Peer('cbsimst-'+n.replace(/-/g,''),{config:window.__ICE||{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});sp.on('connection',function(c){c.on('open',function(){c.send({paused:paused})});c.on('data',function(d){if(d&&d.ping)try{c.send({pong:d.ping,paused:paused})}catch(e){}})});sp.on('error',function(){})}catch(e){}}
+setInterval(statusPeer,3000);document.addEventListener('visibilitychange',function(){if(!document.hidden)statusPeer()});setTimeout(statusPeer,800);
 var asked='';function tell(){var t='They have paused calls, try later';var end=Date.now()+4000;(function f(){var st=$('#cstate');if(st&&st.textContent!==t)st.textContent=t;['#err','#errbar'].forEach(function(s){var e=$(s);if(e&&e.offsetParent!==null&&/not online|declined|Declined|hung up/i.test(e.textContent))e.textContent=t});if(Date.now()<end)setTimeout(f,100)})()}
 var pcache={},quiet=false;function poll(){book().slice(0,10).forEach(function(c){quiet=true;askQ(c.num)})}
 function askQ(n){if(!window.Peer)return;try{var tp=new Peer({config:window.__ICE||{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});tp.on('open',function(){var c=tp.connect('cbsimst-'+n.replace(/-/g,''),{serialization:'json'});c.on('data',function(d){pcache[n]={p:!!(d&&d.paused),t:Date.now()};setTimeout(function(){tp.destroy()},300)})});tp.on('error',function(){});setTimeout(function(){try{tp.destroy()}catch(e){}},8000)}catch(e){}}
@@ -108,4 +108,35 @@ $('#simgo').onclick=function(){var v=$('#simin').value.replace(/\D/g,'');if(v.le
  tmp.on('error',function(){if(!done)$('#simst').textContent='Code not found. Check the 6 numbers.'});setTimeout(function(){if(!done)$('#simst').textContent='Code not found. Check the 6 numbers.'},12000)};
 window.__sim={add:add,book:book,code:function(){return code},link:link,online:online};
 draw();word();
+})();
+// Stay open and connected
+(function(){'use strict';var $=function(s){return document.querySelector(s)};
+var g=function(k,d){try{var v=localStorage.getItem('cbsim_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},p=function(k,v){try{localStorage.setItem('cbsim_'+k,JSON.stringify(v))}catch(e){}};
+var css=document.createElement('style');css.textContent='#simpeer{background:#2e7d32;color:#fff;font-weight:800;font-size:19px;border-radius:14px;padding:10px 14px;margin:6px 0;text-align:center;display:none}#simpeer.show{display:block}#simpeer.wait{background:#ef6c00}#simkeep{background:#3b2417;font-size:18px;padding:12px;display:none}';document.head.appendChild(css);
+var pe=document.createElement('div');pe.id='simpeer';var kb=document.createElement('button');kb.className='sbtn';kb.id='simkeep';kb.textContent='🔒 Keep open (full screen)';
+var cn=$('#simconn');cn.parentNode.insertBefore(pe,cn);cn.parentNode.insertBefore(kb,cn.nextSibling);
+// wake lock held continuously
+var wl=null;function wake(){try{if('wakeLock' in navigator&&!document.hidden&&(!wl||wl.released))navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}catch(e){}}
+['visibilitychange','focus','pageshow','click','touchstart'].forEach(function(e){(e==='visibilitychange'?document:window).addEventListener(e,wake,{passive:true})});setInterval(wake,10000);wake();
+// full screen keep open (Android and desktop)
+if(document.documentElement.requestFullscreen&&!/iPhone|iPad|iPod/.test(navigator.userAgent))kb.style.display='';
+kb.onclick=function(){try{document.documentElement.requestFullscreen({navigationUI:'hide'}).catch(function(){})}catch(e){}wake()};
+// silent loop after first tap, helps iPhone keep the page awake
+var sil=false;function silent(){if(sil)return;sil=true;try{var A=window.AudioContext||window.webkitAudioContext,c=new A(),o=c.createOscillator(),gn=c.createGain();gn.gain.value=0.0001;o.connect(gn).connect(c.destination);o.start();document.addEventListener('visibilitychange',function(){if(!document.hidden&&c.state!=='running')c.resume()})}catch(e){}}
+['pointerdown','touchstart','click'].forEach(function(e){document.addEventListener(e,silent,{once:true,passive:true})});
+// leave confirm
+addEventListener('beforeunload',function(e){e.preventDefault();e.returnValue='Leave the WifiSIM?';return 'Leave the WifiSIM?'});
+try{history.pushState({sim:1},'');addEventListener('popstate',function(){if(confirm('Leave the WifiSIM?')){history.back()}else{history.pushState({sim:1},'')}})}catch(e){}
+// keep-alive with the paired phone
+var kc=null,kp=null,lastPong=0,peerName='';
+function partner(){var b=(window.__sim&&window.__sim.book())||[];return b[0]||null}
+function dial(){var pt=partner();if(!pt||!window.Peer)return;peerName=pt.name;try{if(kc&&kc.open)return}catch(e){}
+ try{if(!kp||kp.destroyed||kp.disconnected){try{kp&&kp.destroy()}catch(e){}kp=new Peer({config:window.__ICE||{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});kp.on('error',function(){});kp.on('open',function(){dial()});return}
+ kc=kp.connect('cbsimst-'+pt.num.replace(/-/g,''),{serialization:'json'});kc.on('data',function(){lastPong=Date.now();show()});kc.on('close',function(){kc=null;setTimeout(dial,300)});kc.on('error',function(){kc=null})}catch(e){}}
+function ping(){if(kc&&kc.open){try{kc.send({ping:Date.now()})}catch(e){}}else dial();if(Date.now()-lastPong>9000&&kc){try{kc.close()}catch(e){}kc=null;dial()}show()}
+function show(){var pt=partner();if(!pt){pe.className='';return}var ok=Date.now()-lastPong<9000;pe.className='show'+(ok?'':' wait');pe.textContent=ok?'✓ Connected to '+pt.name:'Reconnecting to '+pt.name}
+setInterval(ping,3000);setTimeout(dial,1500);
+function back(){if(document.hidden)return;wake();try{kc&&kc.close()}catch(e){}kc=null;if(kp&&kp.disconnected){try{kp.reconnect()}catch(e){}}dial();try{window.dispatchEvent(new Event('online'))}catch(e){}}
+document.addEventListener('visibilitychange',back);addEventListener('focus',back);addEventListener('pageshow',back);addEventListener('online',back);
+window.__keep={show:show,last:function(){return lastPong}};
 })();
